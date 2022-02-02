@@ -10,6 +10,7 @@ const ws = fs.createWriteStream("data.csv");
 const app = express();
 const images = [];
 const prodsNames = [];
+const prices = [];
 const jsonData = [];
 app.get("/images", (req, res) => {
 	axios
@@ -27,9 +28,18 @@ app.get("/images", (req, res) => {
 				console.log($(this));
 				images.push(url);
 			});
-			res.json(prodsNames);
+			$(".woocommerce-Price-amount bdi").each(function () {
+				const url = $(this).text();
+				console.log($(this));
+				prices.push(url);
+			});
+			res.json(prices);
 			for (let prod = 0; prod < prodsNames.length; prod++) {
-				jsonData.push({ prodName: prodsNames[prod], imageUrl: images[prod] });
+				jsonData.push({
+					prodName: prodsNames[prod],
+					imageUrl: images[prod],
+					price: prices[prod],
+				});
 			}
 			fastcsv
 				.write(jsonData, { headers: true })
