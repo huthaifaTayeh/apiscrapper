@@ -17,7 +17,6 @@ const prices = [];
 const jsonData = [];
 
 async function getPages() {
-	console.log("inside getPages");
 	let numberOfPages;
 	await axios
 		.get(fetchURL)
@@ -25,7 +24,6 @@ async function getPages() {
 			const html = resp.data;
 			const $ = cheerio.load(html);
 			numberOfPages = $(".page-numbers").children("li").last().text();
-			console.log("number of pages is: ", numberOfPages);
 		})
 		.catch((error) => {
 			console.log(error);
@@ -33,24 +31,45 @@ async function getPages() {
 	return numberOfPages;
 }
 
-async function getProducts() {
-	console.log("inside function beggining");
+async function getProductPage(href) {
+	imagesList = [];
 	try {
-		console.log("before getPages");
+		const { data } = await axios.get(`https://zeenazaki.com/product/${href}`);
+		const $ = cheerio.load(data);
+		console.log("inside the fetch prod main image function");
+		const url = $(".woocommerce-product-gallery a").attr("href");
+		imagesList.push(url);
+		console.log("image url in product page", url);
+
+		// $(".prettyPhoto img").each(function () {
+		// 	const url = $(this).attr("src");
+		// 	console.log("image url in product page", url);
+		// 	imagesList.push(url);
+		// });
+	} catch (error) {
+		console.log(error);
+	}
+	return imagesList;
+}
+
+async function getProducts() {
+	try {
 		const pages = await getPages();
-		console.log("after getPages");
 		for (let page = 1; page <= pages; page++) {
-			console.log("inside for loop in getProducts");
 			const { data } = await axios.get(fetchURL + `/page/${page}`);
 			const $ = cheerio.load(data);
-			$(".box-name a").each(function () {
+			$(".box-name a").each(async function () {
 				const title = $(this).text();
+				const href = $(this).attr("href").split("/").slice(-2)[0];
+				const imgs = await getProductPage(href);
+				images.push(imgs);
+
 				prodsNames.push(title);
 			});
-			$(".preview-thumb img").each(function () {
-				const url = $(this).attr("src");
-				images.push(url);
-			});
+			// $(".preview-thumb img").each(function () {
+			// 	const url = $(this).attr("src");
+			// 	images.push(url);
+			// });
 			$(".woocommerce-Price-amount bdi").each(function () {
 				const url = $(this).text();
 				prices.push(url);
@@ -75,9 +94,7 @@ async function getProducts() {
 }
 
 app.get("/images", (req, res) => {
-	console.log("before calling get products function");
 	getProducts();
-	console.log("After");
 });
 
 app.listen(PORT, () => console.log("server is running on port: ", PORT));
